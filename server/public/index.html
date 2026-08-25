@@ -1057,6 +1057,15 @@
     75% { transform: rotate(-5deg) scale(1.05); }
     100% { transform: rotate(0deg) scale(1); }
   }
+
+  .pet-tier-2 .pet-emoji {
+    filter: drop-shadow(0 0 6px rgba(255, 200, 0, 0.8));
+  }
+
+  .pet-tier-3 .pet-emoji {
+    filter: drop-shadow(0 0 12px rgba(241, 91, 181, 0.9));
+    animation: petWiggle 1s ease-in-out infinite;
+  }
   /* ===== 错题集 ===== */
   .mistake-item {
     background: #fff;
@@ -2634,6 +2643,54 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     { id: "star", name: "星星糖", emoji: "⭐", price: 1, desc: "独角兽最爱" }
   ];
 
+  const PET_STAGES = {
+    duck: [
+      { minLevel: 1, emoji: "🐣", name: "小鸭宝宝" },
+      { minLevel: 3, emoji: "🐤", name: "小鸭子" },
+      { minLevel: 6, emoji: "🦆", name: "鸭霸王" }
+    ],
+    turtle: [
+      { minLevel: 1, emoji: "🐢", name: "小乌龟" },
+      { minLevel: 3, emoji: "🐢", name: "铁甲龟" },
+      { minLevel: 6, emoji: "🐢", name: "神龟大侠" }
+    ],
+    hamster: [
+      { minLevel: 1, emoji: "🐹", name: "小仓鼠" },
+      { minLevel: 3, emoji: "🐹", name: "胖仓鼠" },
+      { minLevel: 6, emoji: "🐹", name: "仓鼠大王" }
+    ],
+    cat: [
+      { minLevel: 1, emoji: "🐱", name: "小猫咪" },
+      { minLevel: 3, emoji: "🐈", name: "大花猫" },
+      { minLevel: 6, emoji: "🐯", name: "虎斑猫王" }
+    ],
+    rabbit: [
+      { minLevel: 1, emoji: "🐰", name: "小兔子" },
+      { minLevel: 3, emoji: "🐇", name: "飞毛腿兔" },
+      { minLevel: 6, emoji: "🐇", name: "月光神兔" }
+    ],
+    dog: [
+      { minLevel: 1, emoji: "🐶", name: "小狗狗" },
+      { minLevel: 3, emoji: "🐕", name: "大狗狗" },
+      { minLevel: 6, emoji: "🐺", name: "狼王" }
+    ],
+    dino: [
+      { minLevel: 1, emoji: "🦖", name: "小恐龙" },
+      { minLevel: 3, emoji: "🦕", name: "大恐龙" },
+      { minLevel: 6, emoji: "🐉", name: "恐龙战神" }
+    ],
+    dragon: [
+      { minLevel: 1, emoji: "🐲", name: "小神龙" },
+      { minLevel: 3, emoji: "🐲", name: "神龙" },
+      { minLevel: 6, emoji: "🐉", name: "天龙至尊" }
+    ],
+    unicorn: [
+      { minLevel: 1, emoji: "🦄", name: "小独角兽" },
+      { minLevel: 3, emoji: "🦄", name: "星光独角兽" },
+      { minLevel: 6, emoji: "🦄", name: "彩虹独角兽" }
+    ]
+  };
+
   function getFoodCount(foodId) {
     return data.food[foodId] || 0;
   }
@@ -2645,6 +2702,16 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
   function getPetPower(pet) {
     const base = pet.power || (getPetDef(pet.id) ? getPetDef(pet.id).power : 1) || 1;
     return base + (pet.level || 1) - 1;
+  }
+
+  function getPetStage(pet) {
+    const stages = PET_STAGES[pet.id] || [{ minLevel: 1, emoji: pet.emoji, name: pet.name }];
+    const level = pet.level || 1;
+    let current = stages[0];
+    for (const s of stages) {
+      if (level >= s.minLevel) current = s;
+    }
+    return current;
   }
 
   function addFood(foodId, n) {
@@ -2699,15 +2766,21 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     renderShop();
   }
 
-  function interactPet(petIndex) {
+  function interactPet(petIndex, type) {
     const pet = data.pets[petIndex];
     if (!pet) return;
-    pet.happiness = Math.min(100, (pet.happiness || 50) + 2);
+    const gain = type === "play" ? 5 : 2;
+    pet.happiness = Math.min(100, (pet.happiness || 50) + gain);
     saveData();
     updateHeader();
     soundClick();
-    confetti(6);
-    toast(`${pet.emoji} ${pet.name} 好开心！❤️`);
+    const stage = getPetStage(pet);
+    const messages = type === "play"
+      ? [`${stage.emoji} ${stage.name} 玩球玩得好开心！🎾`, `${stage.emoji} 蹦蹦跳跳！`, `${stage.emoji} 还想再玩一次！`]
+      : [`${stage.emoji} ${stage.name} 好舒服！❤️`, `${stage.emoji} 蹭了蹭你！`, `${stage.emoji} 开心得转圈圈！`];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    confetti(type === "play" ? 12 : 6);
+    toast(msg);
     renderShop();
   }
 
@@ -2722,13 +2795,21 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     pet.feedCount++;
     const gain = pet.favoriteFood === foodId ? 15 : 8;
     pet.happiness = Math.min(100, (pet.happiness || 50) + gain);
+    const oldLevel = pet.level || 1;
     pet.level = 1 + Math.floor(pet.feedCount / 5);
     saveData();
     updateHeader();
     soundCorrect();
-    confetti(10);
     const food = FOODS.find(f => f.id === foodId);
-    toast(`${pet.emoji} ${pet.name} 吃了 ${food.emoji}，好开心！`);
+    const stage = getPetStage(pet);
+    if (pet.level > oldLevel) {
+      soundWin();
+      confetti(30);
+      toast(`🎉 ${stage.emoji} ${stage.name} 升级到 Lv.${pet.level} 啦！`);
+    } else {
+      confetti(10);
+      toast(`${stage.emoji} ${stage.name} 吃了 ${food.emoji}，好开心！`);
+    }
     renderShop();
   }
 
@@ -2748,16 +2829,18 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
       html += `<div class="shop-grid">`;
       data.pets.forEach((pet, idx) => {
         const happiness = pet.happiness || 50;
+        const stage = getPetStage(pet);
         html += `
-          <div class="shop-card owned-pet">
-            <div class="pet-emoji">${pet.emoji}</div>
-            <div class="pet-name">${pet.name}</div>
+          <div class="shop-card owned-pet pet-tier-${pet.level >= 6 ? 3 : pet.level >= 3 ? 2 : 1}">
+            <div class="pet-emoji">${stage.emoji}</div>
+            <div class="pet-name">${stage.name}</div>
             <div>Lv.${pet.level || 1}　⚡ 威力 ${getPetPower(pet)}</div>
             <div class="happiness-bar"><div class="happiness-fill" style="width:${happiness}%"></div></div>
             <div class="food-inventory">开心值：${happiness}</div>
             <div class="food-inventory">喂食次数：${pet.feedCount || 0}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px;">
-              <button class="feed-btn interact-btn" data-interact-pet="${idx}">🤚 摸一摸</button>
+              <button class="feed-btn interact-btn" data-interact-pet="${idx}" data-interact-type="pat">🤚 摸一摸</button>
+              <button class="feed-btn interact-btn" data-interact-pet="${idx}" data-interact-type="play">🎾 玩耍</button>
               ${FOODS.filter(f => getFoodCount(f.id) > 0).map(f => `
                 <button class="feed-btn" data-feed-pet="${idx}" data-feed-food="${f.id}">${f.emoji}×${getFoodCount(f.id)}</button>
               `).join("") || '<span class="food-inventory">没有粮食</span>'}
@@ -2815,7 +2898,7 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
       btn.addEventListener("click", () => feedPet(Number(btn.dataset.feedPet), btn.dataset.feedFood));
     });
     body.querySelectorAll("[data-interact-pet]").forEach(btn => {
-      btn.addEventListener("click", () => interactPet(Number(btn.dataset.interactPet)));
+      btn.addEventListener("click", () => interactPet(Number(btn.dataset.interactPet), btn.dataset.interactType));
     });
   }
 
