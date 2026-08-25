@@ -1,7 +1,0 @@
-name = "multiplication-kingdom"
-compatibility_date = "2024-01-01"
-pages_build_output_dir = "./public"
-
-# KV 绑定请在 Cloudflare Pages 项目后台的 Bindings 页面添加：
-# Variable name: MULTIPLICATION_KV
-# KV namespace: 选择你创建的 MULTIPLICATION_KV
