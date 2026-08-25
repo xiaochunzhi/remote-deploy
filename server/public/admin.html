@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👑 管理员后台 - 九九乘法小王国</title>
+<style>
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #ffe29a, #ffb6c1);
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .admin-box {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  h1 { color: #9b5de5; text-align: center; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  input, select, button {
+    padding: 10px 14px;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+    font-family: inherit;
+  }
+  button {
+    cursor: pointer;
+    background: linear-gradient(135deg, #f15bb5, #9b5de5);
+    color: #fff;
+    border: none;
+    font-weight: bold;
+  }
+  button.secondary { background: #fff; color: #333; border: 2px solid #ddd; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #eee; padding: 8px 10px; text-align: center; font-size: 0.95rem; }
+  th { background: #f8f0ff; color: #9b5de5; }
+  tr:nth-child(even) { background: #fafafa; }
+  .msg { color: #f15bb5; font-weight: bold; text-align: center; margin: 10px 0; }
+</style>
+</head>
+<body>
+<div class="admin-box">
+  <h1>👑 管理员后台</h1>
+  <div class="toolbar">
+    <input id="adminToken" type="password" placeholder="管理员口令">
+    <button id="loadBtn">加载同学数据</button>
+    <select id="classFilter">
+      <option value="">全部班级</option>
+    </select>
+    <button id="exportCsvBtn" class="secondary">导出 CSV</button>
+    <button id="exportJsonBtn" class="secondary">导出 JSON</button>
+    <button id="logoutAdminBtn" class="secondary">🚪 退出登录</button>
+  </div>
+  <div id="msg" class="msg"></div>
+  <div id="tableWrap"></div>
+</div>
+
+<script>
+const API = "";
+const ADMIN_STORAGE_KEY = "multiplication_admin_token";
+let adminToken = "";
+let allUsers = [];
+
+function $(id) { return document.getElementById(id); }
+
+function setMsg(text) {
+  $("msg").textContent = text;
+}
+
+async function api(path, options = {}) {
+  const headers = Object.assign({ "x-admin-token": adminToken }, options.headers || {});
+  const res = await fetch(API + path, Object.assign({}, options, { headers }));
+  if (!res.ok) {
+    let msg = "请求失败";
+    try { msg = (await res.json()).error || msg; } catch (e) {}
+    throw new Error(msg);
+  }
+  if (path.endsWith(".csv")) return res.text();
+  return res.json();
+}
+
+function renderTable() {
+  const cls = $("classFilter").value;
+  const users = cls ? allUsers.filter(u => u.className === cls) : allUsers;
+  const wrap = $("tableWrap");
+  if (!users.length) {
+    wrap.innerHTML = '<p style="text-align:center;color:#888;">暂无同学数据</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>班级</th><th>姓名</th><th>星星</th><th>金币</th><th>最高连击</th><th>宠物</th><th>答对</th><th>答错</th><th>更新时间</th></tr></thead><tbody>';
+  users.forEach(u => {
+    html += `<tr>
+      <td>${u.className}</td>
+      <td>${u.name}</td>
+      <td>${u.stars || 0}</td>
+      <td>${u.coins || 0}</td>
+      <td>${u.bestCombo || 0}</td>
+      <td>${Array.isArray(u.pets) ? u.pets.length : 0}</td>
+      <td>${u.scores?.correct || 0}</td>
+      <td>${u.scores?.wrong || 0}</td>
+      <td>${(u.updatedAt || "").replace("T", " ").slice(0, 16)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+async function loadData() {
+  adminToken = $("adminToken").value.trim();
+  if (!adminToken) { setMsg("请输入管理员口令"); return; }
+  try {
+    const json = await api("/api/admin/students");
+    allUsers = json.users || [];
+    const classes = [...new Set(allUsers.map(u => u.className))].sort();
+    const sel = $("classFilter");
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">全部班级</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join("");
+    sel.value = prev;
+    renderTable();
+    localStorage.setItem(ADMIN_STORAGE_KEY, adminToken);
+    setMsg(`共 ${allUsers.length} 名同学`);
+  } catch (e) {
+    setMsg(e.message);
+    try { localStorage.removeItem(ADMIN_STORAGE_KEY); } catch (err) {}
+  }
+}
+
+async function exportCsv() {
+  adminToken = $("adminToken").value.trim();
+  const cls = $("classFilter").value;
+  try {
+    const text = await api(`/api/admin/export.csv${cls ? "?class=" + encodeURIComponent(cls) : ""}`);
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "students.csv";
+    a.click();
+  } catch (e) {
+    setMsg(e.message);
+  }
+}
+
+async function exportJson() {
+  adminToken = $("adminToken").value.trim();
+  try {
+    const json = await api("/api/admin/export.json");
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "students.json";
+    a.click();
+  } catch (e) {
+    setMsg(e.message);
+  }
+}
+
+$("loadBtn").addEventListener("click", loadData);
+$("classFilter").addEventListener("change", renderTable);
+$("exportCsvBtn").addEventListener("click", exportCsv);
+$("exportJsonBtn").addEventListener("click", exportJson);
+$("logoutAdminBtn").addEventListener("click", () => {
+  try { localStorage.removeItem(ADMIN_STORAGE_KEY); } catch (e) {}
+  adminToken = "";
+  allUsers = [];
+  $("adminToken").value = "";
+  $("tableWrap").innerHTML = "";
+  $("msg").textContent = "已退出登录";
+});
+
+// 自动恢复管理员登录状态
+(function autoLogin() {
+  try {
+    const saved = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (saved) {
+      adminToken = saved;
+      $("adminToken").value = saved;
+      loadData();
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: multiplication-kingdom
+    runtime: node
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: MONGODB_URI
+        sync: false
