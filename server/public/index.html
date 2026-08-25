@@ -2704,6 +2704,18 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     return base + (pet.level || 1) - 1;
   }
 
+  const PET_VOICES = {
+    duck: "嘎嘎嘎！",
+    turtle: "慢慢来，慢慢来！",
+    hamster: "吱吱吱！",
+    cat: "喵呜～",
+    rabbit: "小兔跳跳！",
+    dog: "汪汪汪！",
+    dino: "吼吼吼！",
+    dragon: "龙龙来啦！",
+    unicorn: "叮咚，星光闪闪！"
+  };
+
   function getPetStage(pet) {
     const stages = PET_STAGES[pet.id] || [{ minLevel: 1, emoji: pet.emoji, name: pet.name }];
     const level = pet.level || 1;
@@ -2781,6 +2793,8 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     const msg = messages[Math.floor(Math.random() * messages.length)];
     confetti(type === "play" ? 12 : 6);
     toast(msg);
+    const voice = PET_VOICES[pet.id] || "好开心呀！";
+    speak(`${voice} ${type === "play" ? "再玩一次！" : "好开心呀！"}`);
     renderShop();
   }
 
@@ -2802,13 +2816,16 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     soundCorrect();
     const food = FOODS.find(f => f.id === foodId);
     const stage = getPetStage(pet);
+    const voice = PET_VOICES[pet.id] || "好开心呀！";
     if (pet.level > oldLevel) {
       soundWin();
       confetti(30);
       toast(`🎉 ${stage.emoji} ${stage.name} 升级到 Lv.${pet.level} 啦！`);
+      speak(`${voice} 我升级啦！`);
     } else {
       confetti(10);
       toast(`${stage.emoji} ${stage.name} 吃了 ${food.emoji}，好开心！`);
+      speak(`${voice} 好吃，好开心呀！`);
     }
     renderShop();
   }
