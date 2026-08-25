@@ -9,6 +9,10 @@ export async function onRequest(context) {
   const kv = env.MULTIPLICATION_KV;
   const adminToken = env.ADMIN_TOKEN || "admin123";
 
+  if (!kv) {
+    return json({ error: "KV 未绑定：请在 Cloudflare Pages 后台 Bindings 添加 MULTIPLICATION_KV" }, 500);
+  }
+
   try {
     if (method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders() });
