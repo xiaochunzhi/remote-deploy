@@ -12,6 +12,9 @@ export async function onRequest(context) {
   if (!kv) {
     return json({ error: "KV 未绑定：请在 Cloudflare Pages 后台 Bindings 添加 MULTIPLICATION_KV" }, 500);
   }
+  if (typeof kv.list !== "function") {
+    return json({ error: "绑定类型错误：MULTIPLICATION_KV 必须是 KV namespace，请在 Bindings 检查" }, 500);
+  }
 
   try {
     if (method === "OPTIONS") {
