@@ -1014,6 +1014,13 @@
     margin-top: 4px;
   }
 
+  .login-error {
+    color: #e53935;
+    font-weight: bold;
+    margin: 8px 0 0;
+    min-height: 1.2em;
+  }
+
   /* ===== 错题集 ===== */
   .mistake-item {
     background: #fff;
@@ -1085,6 +1092,7 @@
     <input id="loginClass" type="text" placeholder="班级，例如：一年级1班" autocomplete="off">
     <input id="loginName" type="text" placeholder="姓名" autocomplete="off">
     <button id="loginBtn" class="btn-main" type="button">进入 🚀</button>
+    <p id="loginError" class="login-error"></p>
     <p class="tip">不需要密码，填写班级和姓名即可</p>
   </div>
 </div>
@@ -2768,10 +2776,13 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
       toast("请填写班级和姓名");
       return;
     }
+    const errEl = document.getElementById("loginError");
+    if (errEl) errEl.textContent = "";
     try {
       await login(className, name);
       soundWin();
     } catch (e) {
+      if (errEl) errEl.textContent = e.message || "登录失败，请稍后再试";
       toast(e.message || "登录失败，请稍后再试");
     }
   }
