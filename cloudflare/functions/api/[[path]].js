@@ -19,23 +19,23 @@ export async function onRequest(context) {
     }
 
     if (path === "/api/login" && method === "POST") {
-      return handleLogin(request, kv);
+      return await handleLogin(request, kv);
     }
 
     if (path.startsWith("/api/users/") && method === "PUT") {
-      return handleUpdate(request, path, kv);
+      return await handleUpdate(request, path, kv);
     }
 
     if (path === "/api/admin/students" && method === "GET") {
-      return handleAdminStudents(request, kv, adminToken);
+      return await handleAdminStudents(request, kv, adminToken);
     }
 
     if (path === "/api/admin/export.csv" && method === "GET") {
-      return handleExportCsv(request, kv, adminToken);
+      return await handleExportCsv(request, kv, adminToken);
     }
 
     if (path === "/api/admin/export.json" && method === "GET") {
-      return handleExportJson(request, kv, adminToken);
+      return await handleExportJson(request, kv, adminToken);
     }
 
     return json({ error: "Not Found" }, 404);
