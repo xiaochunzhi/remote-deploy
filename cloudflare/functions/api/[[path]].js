@@ -33,6 +33,10 @@ export async function onRequest(context) {
       return await handleUpdate(request, path, kv);
     }
 
+    if (path.startsWith("/api/users/") && method === "DELETE") {
+      return await handleDeleteUser(request, path, kv, adminToken);
+    }
+
     if (path === "/api/admin/students" && method === "GET") {
       return await handleAdminStudents(request, kv, adminToken);
     }
@@ -142,6 +146,16 @@ async function handleUpdate(request, path, kv) {
 
 function checkAdmin(request, adminToken) {
   return request.headers.get("x-admin-token") === adminToken;
+}
+
+async function handleDeleteUser(request, path, kv, adminToken) {
+  if (!checkAdmin(request, adminToken)) {
+    return json({ error: "管理员验证失败" }, 401);
+  }
+  const parts = path.split("/");
+  const id = parts[3];
+  await kv.delete("user:" + id);
+  return json({ ok: true });
 }
 
 async function handleAdminStudents(request, kv, adminToken) {

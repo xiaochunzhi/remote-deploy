@@ -946,6 +946,16 @@
     margin-top: 4px;
   }
 
+  .interact-btn {
+    background: #e0f7fa;
+    color: #00695c;
+    border-color: #00acc1;
+  }
+
+  .interact-btn:hover {
+    background: #b2ebf2;
+  }
+
   .food-inventory {
     font-size: 0.85rem;
     color: #666;
@@ -2669,6 +2679,18 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     renderShop();
   }
 
+  function interactPet(petIndex) {
+    const pet = data.pets[petIndex];
+    if (!pet) return;
+    pet.happiness = Math.min(100, (pet.happiness || 50) + 2);
+    saveData();
+    updateHeader();
+    soundClick();
+    confetti(6);
+    toast(`${pet.emoji} ${pet.name} 好开心！❤️`);
+    renderShop();
+  }
+
   function feedPet(petIndex, foodId) {
     const pet = data.pets[petIndex];
     if (!pet) return;
@@ -2715,6 +2737,7 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
             <div class="food-inventory">开心值：${happiness}</div>
             <div class="food-inventory">喂食次数：${pet.feedCount || 0}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px;">
+              <button class="feed-btn interact-btn" data-interact-pet="${idx}">🤚 摸一摸</button>
               ${FOODS.filter(f => getFoodCount(f.id) > 0).map(f => `
                 <button class="feed-btn" data-feed-pet="${idx}" data-feed-food="${f.id}">${f.emoji}×${getFoodCount(f.id)}</button>
               `).join("") || '<span class="food-inventory">没有粮食</span>'}
@@ -2770,6 +2793,9 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     });
     body.querySelectorAll("[data-feed-pet]").forEach(btn => {
       btn.addEventListener("click", () => feedPet(Number(btn.dataset.feedPet), btn.dataset.feedFood));
+    });
+    body.querySelectorAll("[data-interact-pet]").forEach(btn => {
+      btn.addEventListener("click", () => interactPet(Number(btn.dataset.interactPet)));
     });
   }
 

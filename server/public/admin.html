@@ -43,6 +43,18 @@
   th { background: #f8f0ff; color: #9b5de5; }
   tr:nth-child(even) { background: #fafafa; }
   .msg { color: #f15bb5; font-weight: bold; text-align: center; margin: 10px 0; }
+  .delete-btn {
+    background: #ff6b6b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .delete-btn:hover {
+    background: #e53935;
+  }
 </style>
 </head>
 <body>
@@ -94,7 +106,7 @@ function renderTable() {
     wrap.innerHTML = '<p style="text-align:center;color:#888;">暂无同学数据</p>';
     return;
   }
-  let html = '<table><thead><tr><th>班级</th><th>姓名</th><th>星星</th><th>金币</th><th>最高连击</th><th>宠物</th><th>答对</th><th>答错</th><th>更新时间</th></tr></thead><tbody>';
+  let html = '<table><thead><tr><th>班级</th><th>姓名</th><th>星星</th><th>金币</th><th>最高连击</th><th>宠物</th><th>答对</th><th>答错</th><th>更新时间</th><th>操作</th></tr></thead><tbody>';
   users.forEach(u => {
     html += `<tr>
       <td>${u.className}</td>
@@ -106,6 +118,7 @@ function renderTable() {
       <td>${u.scores?.correct || 0}</td>
       <td>${u.scores?.wrong || 0}</td>
       <td>${(u.updatedAt || "").replace("T", " ").slice(0, 16)}</td>
+      <td><button class="delete-btn" data-id="${u.id}">删除</button></td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -165,6 +178,22 @@ $("loadBtn").addEventListener("click", loadData);
 $("classFilter").addEventListener("change", renderTable);
 $("exportCsvBtn").addEventListener("click", exportCsv);
 $("exportJsonBtn").addEventListener("click", exportJson);
+async function deleteUser(id) {
+  if (!confirm("确定删除该同学的所有学习记录吗？删除后无法恢复。")) return;
+  try {
+    await api("/api/users/" + id, { method: "DELETE" });
+    setMsg("已删除该同学记录");
+    loadData();
+  } catch (e) {
+    setMsg(e.message);
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".delete-btn");
+  if (btn) deleteUser(btn.dataset.id);
+});
+
 $("logoutAdminBtn").addEventListener("click", () => {
   try { localStorage.removeItem(ADMIN_STORAGE_KEY); } catch (e) {}
   adminToken = "";

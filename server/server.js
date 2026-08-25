@@ -143,6 +143,26 @@ app.put("/api/users/:id", async (req, res) => {
   }
 });
 
+// ===== 管理员：删除同学 =====
+app.delete("/api/users/:id", async (req, res) => {
+  if (req.headers["x-admin-token"] !== ADMIN_TOKEN) {
+    return res.status(401).json({ error: "管理员验证失败" });
+  }
+  try {
+    if (usersCollection) {
+      await usersCollection.deleteOne({ id: req.params.id });
+    } else {
+      const db = readFileDB();
+      db.users = db.users.filter(u => u.id !== req.params.id);
+      writeFileDB(db);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "服务器错误" });
+  }
+});
+
 // ===== 管理员：查看所有同学 =====
 app.get("/api/admin/students", async (req, res) => {
   if (req.headers["x-admin-token"] !== ADMIN_TOKEN) {
