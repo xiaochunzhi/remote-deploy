@@ -1908,14 +1908,15 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
   const levelList = $("#levelList");
   levels.forEach(level => {
     const completed = (data.completedChallenges || []).includes(level.id);
+    const locked = level.id === 1 && completed;
     const btn = document.createElement("button");
     btn.className = "btn-level" + (level.id === challenge.level ? " active" : "") + (completed ? " completed" : "");
     btn.textContent = level.name + (completed ? " ✅" : "");
     btn.dataset.level = level.id;
-    btn.disabled = completed;
+    btn.disabled = locked;
     btn.addEventListener("click", () => {
       if (challenge.running) return;
-      if ((data.completedChallenges || []).includes(level.id)) return;
+      if (locked) return;
       challenge.level = level.id;
       document.querySelectorAll("#levelList .btn-level").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
@@ -1949,6 +1950,7 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
 
     if (!challenge.running) {
       const completed = (data.completedChallenges || []).includes(challenge.level);
+      const locked = challenge.level === 1 && completed;
       body.innerHTML = `
         <div class="result-box">
           <div style="font-size:4rem;">🏆</div>
@@ -1957,9 +1959,9 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
           <p>每答对 1 题：+${level.coinReward} 金币</p>
           <p>⭐ 6~7 颗：1 星　⭐ 8~9 颗：2 星　⭐⭐⭐ 10 颗：3 星</p>
           <br>
-          ${completed
-            ? '<p style="color:#999;font-weight:bold;">✅ 本关已完成，不能重复挑战</p>'
-            : '<button class="btn-main" id="challengeBegin">开始挑战 🚀</button>'}
+          ${locked
+            ? '<p style="color:#999;font-weight:bold;">✅ 入门关已完成，不能重复挑战</p>'
+            : '<button class="btn-main" id="challengeBegin">' + (completed ? "再次挑战 🚀" : "开始挑战 🚀") + '</button>'}
         </div>
       `;
       const beginBtn = $("#challengeBegin");
