@@ -52,7 +52,7 @@ export async function onRequest(context) {
     return json({ error: "Not Found" }, 404);
   } catch (e) {
     console.error(e);
-    return json({ error: "服务器错误" }, 500);
+    return json({ error: "服务器错误：" + (e && e.message ? e.message : String(e)) }, 500);
   }
 }
 
