@@ -65,6 +65,7 @@ function defaultUser(className, name) {
       practiceCount: 0
     },
     mistakes: [],
+    completedChallenges: [],
     createdAt: now,
     updatedAt: now
   };
@@ -116,7 +117,7 @@ app.post("/api/login", async (req, res) => {
 
 // ===== 保存同学数据 =====
 app.put("/api/users/:id", async (req, res) => {
-  const allowed = ["stars", "coins", "bestCombo", "pets", "food", "scores", "mistakes"];
+  const allowed = ["stars", "coins", "bestCombo", "pets", "food", "scores", "mistakes", "completedChallenges"];
   const updateData = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updateData[key] = req.body[key];
