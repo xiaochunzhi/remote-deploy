@@ -125,10 +125,8 @@ async function handleLogin(request, kv) {
   if (!user) {
     user = defaultUser(className, name);
     await kv.put("user:" + user.id, JSON.stringify(user));
-  } else {
-    user.updatedAt = new Date().toISOString();
-    await kv.put("user:" + user.id, JSON.stringify(user));
   }
+  // 老用户登录不再写入 KV，减少免费额度消耗
   return json({ ok: true, user });
 }
 
