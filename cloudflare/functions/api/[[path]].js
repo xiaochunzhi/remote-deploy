@@ -93,6 +93,10 @@ function defaultUser(className, name) {
     },
     mistakes: [],
     completedChallenges: [],
+    ownedSkins: [],
+    equippedSkins: {},
+    unlockedTitles: [],
+    equippedTitle: null,
     createdAt: now,
     updatedAt: now
   };
@@ -136,7 +140,7 @@ async function handleUpdate(request, path, kv) {
   if (!raw) return json({ error: "用户不存在" }, 404);
 
   const user = JSON.parse(raw);
-  const allowed = ["stars", "coins", "bestCombo", "pets", "food", "scores", "mistakes", "completedChallenges"];
+  const allowed = ["stars", "coins", "bestCombo", "pets", "food", "scores", "mistakes", "completedChallenges", "ownedSkins", "equippedSkins", "unlockedTitles", "equippedTitle"];
   for (const key of allowed) {
     if (body[key] !== undefined) user[key] = body[key];
   }

@@ -1074,6 +1074,26 @@
     filter: drop-shadow(0 0 12px rgba(241, 91, 181, 0.9));
     animation: petWiggle 1s ease-in-out infinite;
   }
+
+  /* ===== 星星商店 ===== */
+  .title-card .pet-emoji {
+    font-size: 2.6rem;
+  }
+
+  .skin-tag {
+    display: inline-block;
+    background: #fff3cd;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    color: #b58900;
+    margin-top: 4px;
+  }
+
+  .equipped-tag {
+    background: #b9f6ca;
+    color: #007a33;
+  }
   /* ===== 错题集 ===== */
   .mistake-item {
     background: #fff;
@@ -1172,6 +1192,7 @@
     <button class="tab" data-tab="memory">🃏 记忆翻牌</button>
     <button class="tab" data-tab="homework">📝 暑假作业</button>
     <button class="tab" data-tab="shop">🐾 宠物商店</button>
+    <button class="tab" data-tab="starShop">⭐ 星星商店</button>
     <button class="tab" data-tab="mistakes">📕 错题集</button>
   </nav>
 
@@ -1317,6 +1338,19 @@
         </div>
         <div id="shopBody">
           <p class="tip">答对题目可以赚金币，用金币来买宠物和粮食吧！</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 星星商店 -->
+    <section id="starShop" class="tab-content">
+      <div class="panel">
+        <div class="game-header">
+          <h2>⭐ 星星商店</h2>
+          <span class="stat">⭐ <span id="starShopCount">0</span></span>
+        </div>
+        <div id="starShopBody">
+          <p class="tip">用星星购买宠物皮肤、解锁称号！</p>
         </div>
       </div>
     </section>
@@ -1664,7 +1698,11 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
       food: {},
       scores: { correct: 0, wrong: 0, challengeWins: 0, practiceCount: 0 },
       mistakes: [],
-      completedChallenges: []
+      completedChallenges: [],
+      ownedSkins: [],
+      equippedSkins: {},
+      unlockedTitles: [],
+      equippedTitle: null
     };
   }
 
@@ -1680,7 +1718,11 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
         food: (currentUser.food && typeof currentUser.food === "object") ? currentUser.food : {},
         scores: currentUser.scores || { correct: 0, wrong: 0, challengeWins: 0, practiceCount: 0 },
         mistakes: Array.isArray(currentUser.mistakes) ? currentUser.mistakes : [],
-        completedChallenges: Array.isArray(currentUser.completedChallenges) ? currentUser.completedChallenges : []
+        completedChallenges: Array.isArray(currentUser.completedChallenges) ? currentUser.completedChallenges : [],
+        ownedSkins: Array.isArray(currentUser.ownedSkins) ? currentUser.ownedSkins : [],
+        equippedSkins: (currentUser.equippedSkins && typeof currentUser.equippedSkins === "object") ? currentUser.equippedSkins : {},
+        unlockedTitles: Array.isArray(currentUser.unlockedTitles) ? currentUser.unlockedTitles : [],
+        equippedTitle: currentUser.equippedTitle || null
       };
     }
     return defaultData();
@@ -1696,7 +1738,11 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
       food: data.food,
       scores: data.scores,
       mistakes: data.mistakes,
-      completedChallenges: data.completedChallenges
+      completedChallenges: data.completedChallenges,
+      ownedSkins: data.ownedSkins,
+      equippedSkins: data.equippedSkins,
+      unlockedTitles: data.unlockedTitles,
+      equippedTitle: data.equippedTitle
     };
     fetch(`${API_BASE}/api/users/${currentUser.id}`, {
       method: "PUT",
@@ -1720,7 +1766,7 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     } catch (e) {}
     document.getElementById("loginOverlay").style.display = "none";
     document.getElementById("userArea").style.display = "flex";
-    document.getElementById("currentUserName").textContent = `👤 ${className} · ${name}`;
+    updateUserArea();
     updateHeader();
     if (document.getElementById("shopBody")) renderShop();
     if (document.getElementById("mistakesBody")) renderMistakes();
@@ -1757,6 +1803,8 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     document.getElementById("bestCombo").textContent = data.bestCombo;
     const coinEl = document.getElementById("coinCount");
     if (coinEl) coinEl.textContent = data.coins;
+    const starShopEl = document.getElementById("starShopCount");
+    if (starShopEl) starShopEl.textContent = data.stars;
   }
 
   function addStars(n) {
@@ -2932,10 +2980,13 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
       data.pets.forEach((pet, idx) => {
         const happiness = pet.happiness || 50;
         const stage = getPetStage(pet);
+        const skin = data.equippedSkins && data.equippedSkins[pet.id] ? PET_SKINS.find(s => s.id === data.equippedSkins[pet.id]) : null;
+        const displayEmoji = skin ? skin.emoji : stage.emoji;
+        const displayName = skin ? skin.name : stage.name;
         html += `
           <div class="shop-card owned-pet pet-tier-${pet.level >= 6 ? 3 : pet.level >= 3 ? 2 : 1}">
-            <div class="pet-emoji">${stage.emoji}</div>
-            <div class="pet-name">${stage.name}</div>
+            <div class="pet-emoji">${displayEmoji}</div>
+            <div class="pet-name">${displayName}</div>
             <div>Lv.${pet.level || 1}　⚡ 威力 ${getPetPower(pet)}</div>
             <div class="happiness-bar"><div class="happiness-fill" style="width:${happiness}%"></div></div>
             <div class="food-inventory">开心值：${happiness}</div>
@@ -3159,6 +3210,170 @@ const VOICE_CLIPS = {"1": "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTG
     renderMistakes();
     toast("错题已清空");
   }
+
+
+  // ===== 星星商店：皮肤 & 称号 =====
+  const PET_SKINS = [
+    { id: "cat_black", petId: "cat", name: "黑猫警长", emoji: "🐈‍⬛", price: 50, desc: "酷酷的黑猫" },
+    { id: "cat_white", petId: "cat", name: "雪白猫咪", emoji: "🐈", price: 60, desc: "优雅的白猫" },
+    { id: "dog_husky", petId: "dog", name: "哈士奇", emoji: "🐺", price: 60, desc: "帅气二哈" },
+    { id: "dog_poodle", petId: "dog", name: "卷毛贵宾", emoji: "🐩", price: 50, desc: "可爱卷毛" },
+    { id: "rabbit_angel", petId: "rabbit", name: "天使兔", emoji: "🐇", price: 60, desc: "长耳朵天使" },
+    { id: "panda_bamboo", petId: "panda", name: "竹子熊猫", emoji: "🐼", price: 80, desc: "抱着竹子" },
+    { id: "dragon_gold", petId: "dragon", name: "黄金神龙", emoji: "🐉", price: 150, desc: "金光闪闪" },
+    { id: "unicorn_rainbow", petId: "unicorn", name: "彩虹独角兽", emoji: "🦄", price: 200, desc: "七彩传说" }
+  ];
+
+  const TITLES = [
+    { id: "beginner", name: "数学小新星", emoji: "🌟", starsRequired: 10, desc: "累计获得 10 颗星" },
+    { id: "bronze", name: "青铜小算手", emoji: "🥉", starsRequired: 50, desc: "累计获得 50 颗星" },
+    { id: "silver", name: "白银小达人", emoji: "🥈", starsRequired: 100, desc: "累计获得 100 颗星" },
+    { id: "gold", name: "黄金小神算", emoji: "🥇", starsRequired: 200, desc: "累计获得 200 颗星" },
+    { id: "king", name: "乘法小国王", emoji: "👑", starsRequired: 500, desc: "累计获得 500 颗星" }
+  ];
+
+  function spendStars(n) {
+    if (data.stars >= n) {
+      data.stars -= n;
+      saveData();
+      updateHeader();
+      return true;
+    }
+    return false;
+  }
+
+  function buySkin(skinId) {
+    const skin = PET_SKINS.find(s => s.id === skinId);
+    if (!skin) return;
+    if (data.ownedSkins.includes(skinId)) {
+      toast("已经拥有这个皮肤啦！");
+      return;
+    }
+    if (data.stars < skin.price) {
+      toast("星星不够，再去闯关赚星星吧！");
+      soundWrong();
+      return;
+    }
+    spendStars(skin.price);
+    data.ownedSkins.push(skinId);
+    saveData();
+    soundWin();
+    confetti(20);
+    toast(`获得皮肤：${skin.emoji} ${skin.name}！`);
+    renderStarShop();
+  }
+
+  function equipSkin(skinId) {
+    const skin = PET_SKINS.find(s => s.id === skinId);
+    if (!skin) return;
+    if (!data.ownedSkins.includes(skinId)) return;
+    data.equippedSkins[skin.petId] = skinId;
+    saveData();
+    soundClick();
+    toast(`${skin.emoji} ${skin.name} 已装备！`);
+    renderStarShop();
+    if (document.getElementById("shopBody")) renderShop();
+  }
+
+  function unlockTitles() {
+    if (!Array.isArray(data.unlockedTitles)) data.unlockedTitles = [];
+    let changed = false;
+    TITLES.forEach(t => {
+      if (!data.unlockedTitles.includes(t.id) && data.stars >= t.starsRequired) {
+        data.unlockedTitles.push(t.id);
+        changed = true;
+      }
+    });
+    if (changed) {
+      saveData();
+      updateHeader();
+    }
+  }
+
+  function equipTitle(titleId) {
+    const title = TITLES.find(t => t.id === titleId);
+    if (!title) return;
+    if (!data.unlockedTitles.includes(titleId)) return;
+    data.equippedTitle = titleId;
+    saveData();
+    soundClick();
+    updateUserArea();
+    toast(`称号已更换：${title.emoji} ${title.name}`);
+    renderStarShop();
+  }
+
+  function updateUserArea() {
+    const el = document.getElementById("currentUserName");
+    if (!el) return;
+    const title = TITLES.find(t => t.id === data.equippedTitle);
+    const base = currentUser ? `👤 ${currentUser.className} · ${currentUser.name}` : "👤";
+    el.textContent = title ? `${base} ${title.emoji}${title.name}` : base;
+  }
+
+  function renderStarShop() {
+    const body = document.getElementById("starShopBody");
+    if (!body) return;
+    const countEl = document.getElementById("starShopCount");
+    if (countEl) countEl.textContent = data.stars;
+    unlockTitles();
+
+    let html = `<div class="shop-coins">⭐ 我的星星：${data.stars}</div>`;
+
+    // 宠物皮肤
+    html += `<h3 class="shop-section-title">🎨 宠物皮肤</h3>`;
+    html += `<div class="shop-grid">`;
+    PET_SKINS.forEach(skin => {
+      const owned = data.ownedSkins.includes(skin.id);
+      const equipped = data.equippedSkins[skin.petId] === skin.id;
+      html += `
+        <div class="shop-card ${owned ? 'owned-pet' : ''}">
+          <div class="pet-emoji">${skin.emoji}</div>
+          <div class="pet-name">${skin.name}</div>
+          <div class="pet-desc">${skin.desc}</div>
+          ${owned ? '<div class="skin-tag equipped-tag">已拥有</div>' : `<div class="price">⭐ ${skin.price}</div>`}
+          <br>
+          ${owned
+            ? `<button class="buy-btn" data-equip-skin="${skin.id}" ${equipped ? 'disabled' : ''}>${equipped ? "使用中" : "使用"}</button>`
+            : `<button class="buy-btn" data-buy-skin="${skin.id}" ${data.stars < skin.price ? 'disabled' : ''}>购买</button>`}
+        </div>
+      `;
+    });
+    html += `</div>`;
+
+    // 称号
+    html += `<h3 class="shop-section-title">🏅 解锁称号</h3>`;
+    html += `<div class="shop-grid">`;
+    TITLES.forEach(t => {
+      const unlocked = data.unlockedTitles.includes(t.id);
+      const equipped = data.equippedTitle === t.id;
+      html += `
+        <div class="shop-card title-card ${unlocked ? 'owned-pet' : ''}">
+          <div class="pet-emoji">${t.emoji}</div>
+          <div class="pet-name">${t.name}</div>
+          <div class="pet-desc">${t.desc}</div>
+          <div class="price">${unlocked ? "已解锁" : `需要 ⭐ ${t.starsRequired}`}</div>
+          ${unlocked
+            ? `<button class="buy-btn" data-equip-title="${t.id}" ${equipped ? 'disabled' : ''}>${equipped ? "使用中" : "装备"}</button>`
+            : `<button class="buy-btn" disabled>未解锁</button>`}
+        </div>
+      `;
+    });
+    html += `</div>`;
+
+    body.innerHTML = html;
+
+    body.querySelectorAll("[data-buy-skin]").forEach(btn => {
+      btn.addEventListener("click", () => buySkin(btn.dataset.buySkin));
+    });
+    body.querySelectorAll("[data-equip-skin]").forEach(btn => {
+      btn.addEventListener("click", () => equipSkin(btn.dataset.equipSkin));
+    });
+    body.querySelectorAll("[data-equip-title]").forEach(btn => {
+      btn.addEventListener("click", () => equipTitle(btn.dataset.equipTitle));
+    });
+  }
+
+  document.querySelector('.tab[data-tab="starShop"]').addEventListener("click", renderStarShop);
 
   // 初始化
   $("#loginBtn").addEventListener("click", doLogin);

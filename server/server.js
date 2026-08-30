@@ -66,6 +66,10 @@ function defaultUser(className, name) {
     },
     mistakes: [],
     completedChallenges: [],
+    ownedSkins: [],
+    equippedSkins: {},
+    unlockedTitles: [],
+    equippedTitle: null,
     createdAt: now,
     updatedAt: now
   };
@@ -117,7 +121,7 @@ app.post("/api/login", async (req, res) => {
 
 // ===== 保存同学数据 =====
 app.put("/api/users/:id", async (req, res) => {
-  const allowed = ["stars", "coins", "bestCombo", "pets", "food", "scores", "mistakes", "completedChallenges"];
+  const allowed = ["stars", "coins", "bestCombo", "pets", "food", "scores", "mistakes", "completedChallenges", "ownedSkins", "equippedSkins", "unlockedTitles", "equippedTitle"];
   const updateData = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updateData[key] = req.body[key];
